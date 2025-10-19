@@ -8,7 +8,14 @@ const ResumeActions = () => {
   const { clearResume, exportData, importData } = useResume();
 
   const handleDownloadPDF = () => {
-    window.print();
+    try {
+      toast.info('Opening print dialog...');
+      window.print();
+      toast.success('✓ Ready to save as PDF!');
+    } catch (error) {
+      console.error('Print error:', error);
+      toast.error('Failed to open print dialog');
+    }
   };
 
   const handleClear = () => {
@@ -19,15 +26,22 @@ const ResumeActions = () => {
   };
 
   const handleExport = () => {
-    const data = exportData();
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'resume-data.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Resume data exported successfully');
+    try {
+      const data = exportData();
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'resume-data.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('✓ Resume data exported successfully!');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export resume data');
+    }
   };
 
   const handleImport = () => {

@@ -238,15 +238,22 @@ export const ATSScoreChecker = () => {
       return;
     }
 
-    const data = JSON.stringify(resumeData, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'resume-ats-optimized.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Optimized resume downloaded!');
+    try {
+      const data = JSON.stringify(resumeData, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'resume-ats-optimized.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('✓ Optimized resume downloaded successfully!');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download resume. Please try again.');
+    }
   };
 
   const getScoreColor = (score: number) => {
