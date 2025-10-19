@@ -3,6 +3,7 @@ import { ArrowRight, FileText, Sparkles, Download, CheckCircle } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Navigation from '@/components/Navigation';
+import { ATSScoreChecker } from '@/components/ATSScoreChecker';
 
 const Index = () => {
   return (
@@ -44,14 +45,21 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Features Section */}
+      {/* ATS Checker + Features Section */}
       <section className="container mx-auto px-4 py-20 bg-muted/30">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
             Why Choose Our Resume Builder?
           </h2>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-4 gap-8">
+            {/* ATS Score Checker - Left side */}
+            <div className="lg:col-span-1">
+              <ATSScoreChecker />
+            </div>
+            
+            {/* Features - Right side */}
+            <div className="lg:col-span-3 grid md:grid-cols-3 gap-8">
             <Card className="p-6 space-y-4 hover:shadow-lg transition-shadow">
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
                 <FileText className="h-6 w-6 text-primary" />
@@ -81,6 +89,7 @@ const Index = () => {
                 Download your resume as a PDF with one click. Ready to send to employers.
               </p>
             </Card>
+            </div>
           </div>
         </div>
       </section>
