@@ -24,37 +24,83 @@ export const ATSScoreChecker = () => {
   const handleUploadResume = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,.pdf,.docx';
+    input.accept = '.json,.pdf,.docx,.doc,.txt';
     input.onchange = async (e: any) => {
       const file = e.target.files[0];
       if (!file) return;
 
       setLoading(true);
+      toast.info('Processing your resume...');
+      
       try {
-        const reader = new FileReader();
-        reader.onload = async (event: any) => {
-          try {
-            let content = event.target.result;
-            
-            // If it's a JSON file, parse it directly
-            if (file.name.endsWith('.json')) {
-              const data = JSON.parse(content);
+        if (file.name.endsWith('.json')) {
+          // Handle JSON files
+          const reader = new FileReader();
+          reader.onload = async (event: any) => {
+            try {
+              const data = JSON.parse(event.target.result as string);
               setResumeData(data);
               await checkATSScore(data);
-            } else {
-              // For PDF/DOCX, we'll need to extract text
-              toast.info('Processing document...');
-              // For now, show a message that JSON format is preferred
-              toast.error('Please upload a JSON resume file for full functionality');
+            } catch (error) {
+              console.error('Error parsing JSON:', error);
+              toast.error('Invalid JSON file format');
               setLoading(false);
             }
-          } catch (error) {
-            console.error('Error processing file:', error);
-            toast.error('Failed to process resume file');
-            setLoading(false);
-          }
-        };
-        reader.readAsText(file);
+          };
+          reader.readAsText(file);
+        } else if (file.name.endsWith('.pdf') || file.name.endsWith('.docx') || file.name.endsWith('.doc') || file.name.endsWith('.txt')) {
+          // Handle PDF, DOCX, DOC, and TXT files - extract text and parse with AI
+          const reader = new FileReader();
+          reader.onload = async (event: any) => {
+            try {
+              const content = event.target.result as string;
+              
+              // Use AI to parse the resume text into structured format
+              const { data: parseResult, error: parseError } = await supabase.functions.invoke('ai-resume-suggestions', {
+                body: {
+                  content: content,
+                  type: 'parse-resume',
+                },
+              });
+
+              if (parseError) {
+                if (parseError.message?.includes('429') || parseError.message?.includes('Rate limit')) {
+                  toast.error('Rate limits exceeded. Please try again later.');
+                } else if (parseError.message?.includes('402') || parseError.message?.includes('Payment')) {
+                  toast.error('Payment required. Please add funds to your workspace.');
+                } else {
+                  throw parseError;
+                }
+                setLoading(false);
+                return;
+              }
+
+              if (parseResult?.text) {
+                let jsonString = parseResult.text.trim();
+                
+                // Remove markdown code blocks
+                if (jsonString.startsWith('```json')) {
+                  jsonString = jsonString.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+                } else if (jsonString.startsWith('```')) {
+                  jsonString = jsonString.replace(/```\n?/g, '');
+                }
+
+                const parsedData = JSON.parse(jsonString);
+                setResumeData(parsedData);
+                toast.success('Resume parsed successfully!');
+                await checkATSScore(parsedData);
+              }
+            } catch (error) {
+              console.error('Error processing document:', error);
+              toast.error('Failed to parse resume. Please try a different file format.');
+              setLoading(false);
+            }
+          };
+          reader.readAsText(file);
+        } else {
+          toast.error('Unsupported file format. Please upload JSON, PDF, DOCX, DOC, or TXT.');
+          setLoading(false);
+        }
       } catch (error) {
         console.error('Error reading file:', error);
         toast.error('Failed to read file');
