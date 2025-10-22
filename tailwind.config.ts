@@ -13,6 +13,18 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        'inter': ['Inter', 'system-ui', 'sans-serif'],
+        'roboto': ['Roboto', 'system-ui', 'sans-serif'],
+        'playfair': ['Playfair Display', 'Georgia', 'serif'],
+        'merriweather': ['Merriweather', 'Georgia', 'serif'],
+        'lato': ['Lato', 'system-ui', 'sans-serif'],
+        'montserrat': ['Montserrat', 'system-ui', 'sans-serif'],
+        'raleway': ['Raleway', 'system-ui', 'sans-serif'],
+        'open-sans': ['Open Sans', 'system-ui', 'sans-serif'],
+        'lora': ['Lora', 'Georgia', 'serif'],
+        'crimson': ['Crimson Text', 'Georgia', 'serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

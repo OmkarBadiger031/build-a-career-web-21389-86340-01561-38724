@@ -10,26 +10,20 @@ interface FinanceTemplateProps {
 export const FinanceTemplate = ({ resumeData, variant }: FinanceTemplateProps) => {
   const { personalInfo, summary, workExperience, education, skills, projects, certifications } = resumeData;
 
+  // Get design from resumeData
+  const design = resumeData.design;
+  const fontClass = design?.fontFamily ? `font-${design.fontFamily}` : 'font-roboto';
+
   const colorMap = {
-    analyst: 'text-gray-800',
-    banker: 'text-blue-900',
-    accountant: 'text-green-800',
-    advisor: 'text-blue-600',
-    trader: 'text-red-600',
-    auditor: 'text-gray-900',
+    analyst: { text: 'text-gray-800', border: 'border-gray-800', bg: 'bg-gray-800' },
+    banker: { text: 'text-blue-900', border: 'border-blue-900', bg: 'bg-blue-900' },
+    accountant: { text: 'text-green-800', border: 'border-green-800', bg: 'bg-green-800' },
+    advisor: { text: 'text-blue-600', border: 'border-blue-600', bg: 'bg-blue-600' },
+    trader: { text: 'text-red-600', border: 'border-red-600', bg: 'bg-red-600' },
+    auditor: { text: 'text-gray-900', border: 'border-gray-900', bg: 'bg-gray-900' },
   };
 
-  const bgColorMap = {
-    analyst: 'bg-gray-800',
-    banker: 'bg-blue-900',
-    accountant: 'bg-green-800',
-    advisor: 'bg-blue-600',
-    trader: 'bg-red-600',
-    auditor: 'bg-gray-900',
-  };
-
-  const color = colorMap[variant];
-  const bgColor = bgColorMap[variant];
+  const colors = colorMap[variant];
 
   const formatDate = (date: string) => {
     if (!date) return '';
@@ -38,18 +32,17 @@ export const FinanceTemplate = ({ resumeData, variant }: FinanceTemplateProps) =
   };
 
   return (
-    <div className="bg-white text-black font-sans text-sm">
+    <div className={`bg-white text-black ${fontClass} text-sm`}>
       {/* Header */}
-      <div className="text-center border-b-4 pb-4 mb-4" style={{ borderColor: color.replace('text-', '') }}>
+      <div className={`text-center ${colors.border} border-b-4 pb-4 mb-4`}>
         {personalInfo.photo && (
           <img
             src={personalInfo.photo}
             alt={personalInfo.fullName}
-            className="w-24 h-24 rounded-full object-cover mx-auto mb-3 border-4"
-            style={{ borderColor: color.replace('text-', '') }}
+            className={`w-24 h-24 rounded-full object-cover mx-auto mb-3 ${colors.border} border-4`}
           />
         )}
-        <h1 className={`text-3xl font-bold ${color} mb-2`}>{personalInfo.fullName || 'Your Name'}</h1>
+        <h1 className={`text-3xl font-bold ${colors.text} mb-2`}>{personalInfo.fullName || 'Your Name'}</h1>
         <div className="flex flex-wrap justify-center gap-3 text-gray-600 text-xs">
           {personalInfo.email && (
             <div className="flex items-center gap-1">
@@ -87,7 +80,7 @@ export const FinanceTemplate = ({ resumeData, variant }: FinanceTemplateProps) =
       {/* Professional Summary */}
       {summary && (
         <div className="mb-4">
-          <h2 className={`text-lg font-bold ${color} border-b-2 pb-1 mb-2 uppercase tracking-wide`}>
+          <h2 className={`text-lg font-bold ${colors.text} border-b-2 pb-1 mb-2 uppercase tracking-wide`}>
             Professional Summary
           </h2>
           <p className="text-gray-700 leading-relaxed">{summary}</p>
@@ -97,16 +90,16 @@ export const FinanceTemplate = ({ resumeData, variant }: FinanceTemplateProps) =
       {/* Experience */}
       {workExperience.length > 0 && (
         <div className="mb-4">
-          <h2 className={`text-lg font-bold ${color} border-b-2 pb-1 mb-3 uppercase tracking-wide`}>
+          <h2 className={`text-lg font-bold ${colors.text} border-b-2 pb-1 mb-3 uppercase tracking-wide`}>
             Professional Experience
           </h2>
           <div className="space-y-3">
             {workExperience.map((exp) => (
-              <div key={exp.id} className="border-l-3 pl-3" style={{ borderLeftWidth: '3px', borderColor: color.replace('text-', '') }}>
+              <div key={exp.id} className={`${colors.border} border-l-3 pl-3`} style={{ borderLeftWidth: '3px' }}>
                 <div className="flex justify-between items-start mb-1">
                   <div>
                     <h3 className="font-bold text-black">{exp.position}</h3>
-                    <p className={`${color} font-semibold`}>{exp.company}</p>
+                    <p className={`${colors.text} font-semibold`}>{exp.company}</p>
                   </div>
                   <span className="text-xs text-gray-600">
                     {formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}
@@ -122,7 +115,7 @@ export const FinanceTemplate = ({ resumeData, variant }: FinanceTemplateProps) =
       {/* Education */}
       {education.length > 0 && (
         <div className="mb-4">
-          <h2 className={`text-lg font-bold ${color} border-b-2 pb-1 mb-3 uppercase tracking-wide`}>
+          <h2 className={`text-lg font-bold ${colors.text} border-b-2 pb-1 mb-3 uppercase tracking-wide`}>
             Education
           </h2>
           <div className="space-y-3">
@@ -131,7 +124,7 @@ export const FinanceTemplate = ({ resumeData, variant }: FinanceTemplateProps) =
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-bold text-black">{edu.degree} in {edu.field}</h3>
-                    <p className={`${color} text-sm`}>{edu.institution}</p>
+                    <p className={`${colors.text} text-sm`}>{edu.institution}</p>
                     {edu.gpa && <p className="text-xs text-gray-600">GPA: {edu.gpa}</p>}
                   </div>
                   <span className="text-xs text-gray-600">
@@ -147,7 +140,7 @@ export const FinanceTemplate = ({ resumeData, variant }: FinanceTemplateProps) =
       {/* Skills */}
       {skills.length > 0 && (
         <div className="mb-4">
-          <h2 className={`text-lg font-bold ${color} border-b-2 pb-1 mb-3 uppercase tracking-wide`}>
+          <h2 className={`text-lg font-bold ${colors.text} border-b-2 pb-1 mb-3 uppercase tracking-wide`}>
             Core Competencies
           </h2>
           <div className="grid grid-cols-3 gap-2">
@@ -163,7 +156,7 @@ export const FinanceTemplate = ({ resumeData, variant }: FinanceTemplateProps) =
       {/* Certifications */}
       {certifications.length > 0 && (
         <div className="mb-4">
-          <h2 className={`text-lg font-bold ${color} border-b-2 pb-1 mb-3 uppercase tracking-wide`}>
+          <h2 className={`text-lg font-bold ${colors.text} border-b-2 pb-1 mb-3 uppercase tracking-wide`}>
             Certifications & Licenses
           </h2>
           <div className="space-y-2">
@@ -183,7 +176,7 @@ export const FinanceTemplate = ({ resumeData, variant }: FinanceTemplateProps) =
       {/* Projects */}
       {projects.length > 0 && (
         <div>
-          <h2 className={`text-lg font-bold ${color} border-b-2 pb-1 mb-3 uppercase tracking-wide`}>
+          <h2 className={`text-lg font-bold ${colors.text} border-b-2 pb-1 mb-3 uppercase tracking-wide`}>
             Key Projects
           </h2>
           <div className="space-y-2">
