@@ -66,7 +66,10 @@ const Auth = () => {
           toast.error(error.message);
         }
       } else if (data.user) {
-        toast.success('Account created successfully! You can now sign in.');
+        // Sign out immediately to prevent auto-login
+        await supabase.auth.signOut();
+        
+        toast.success('Account created successfully! Please use the Sign In tab to log in.');
         // Clear form
         setEmail('');
         setPassword('');
