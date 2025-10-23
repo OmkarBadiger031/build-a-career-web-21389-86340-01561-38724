@@ -49,11 +49,63 @@ const ResumeContext = createContext<ResumeContextType | undefined>(undefined);
 export const ResumeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [resumeData, setResumeData] = useState<ResumeData>(() => {
     const saved = localStorage.getItem('resumeData');
-    return saved ? JSON.parse(saved) : initialResumeData;
+    const parsed = saved ? JSON.parse(saved) : initialResumeData;
+    
+    // Try to restore photo from sessionStorage
+    if (!parsed.personalInfo.photo) {
+      try {
+        const savedPhoto = sessionStorage.getItem('resumePhoto');
+        if (savedPhoto) {
+          parsed.personalInfo.photo = savedPhoto;
+        }
+      } catch (e) {
+        console.warn('Could not restore photo from session');
+      }
+    }
+    
+    return parsed;
   });
 
   useEffect(() => {
-    localStorage.setItem('resumeData', JSON.stringify(resumeData));
+    try {
+      // Create a copy of resumeData without the photo to reduce size
+      const dataToSave = {
+        ...resumeData,
+        personalInfo: {
+          ...resumeData.personalInfo,
+          photo: '' // Don't store large base64 photos in localStorage
+        }
+      };
+      localStorage.setItem('resumeData', JSON.stringify(dataToSave));
+      
+      // Store photo separately in sessionStorage (cleared on tab close) or not at all
+      if (resumeData.personalInfo.photo) {
+        try {
+          sessionStorage.setItem('resumePhoto', resumeData.personalInfo.photo);
+        } catch (e) {
+          // If photo is too large even for sessionStorage, ignore it
+          console.warn('Photo too large to store in session');
+        }
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.error('Storage quota exceeded. Resume data is too large.');
+        // Clear old data and try again without photo
+        localStorage.removeItem('resumeData');
+        const minimalData = {
+          ...resumeData,
+          personalInfo: {
+            ...resumeData.personalInfo,
+            photo: ''
+          }
+        };
+        try {
+          localStorage.setItem('resumeData', JSON.stringify(minimalData));
+        } catch (e) {
+          console.error('Failed to save even minimal resume data');
+        }
+      }
+    }
   }, [resumeData]);
 
   const updatePersonalInfo = (info: Partial<ResumeData['personalInfo']>) => {
