@@ -15,24 +15,26 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (session && !isSigningUp) {
         navigate('/');
       }
     };
     checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      // Don't redirect during signup flow
+      if (session && !isSigningUp) {
         navigate('/');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, isSigningUp]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +48,7 @@ const Auth = () => {
     }
 
     setLoading(true);
+    setIsSigningUp(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -80,6 +83,7 @@ const Auth = () => {
       toast.error(error.message || 'An error occurred during sign up');
     } finally {
       setLoading(false);
+      setIsSigningUp(false);
     }
   };
 
