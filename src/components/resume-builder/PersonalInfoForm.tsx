@@ -8,7 +8,6 @@ import { useResume } from '@/contexts/ResumeContext';
 
 const PersonalInfoForm = () => {
   const { resumeData, updatePersonalInfo } = useResume();
-  const [photoPreview, setPhotoPreview] = useState(resumeData.personalInfo.photo || '');
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -16,19 +15,13 @@ const PersonalInfoForm = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = reader.result as string;
-        setPhotoPreview(base64);
-        // Don't auto-save - only update preview
+        updatePersonalInfo({ photo: base64 });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSavePhoto = () => {
-    updatePersonalInfo({ photo: photoPreview });
-  };
-
   const handleRemovePhoto = () => {
-    setPhotoPreview('');
     updatePersonalInfo({ photo: '' });
   };
 
@@ -46,7 +39,7 @@ const PersonalInfoForm = () => {
       <div className="space-y-4">
         <div className="flex items-center gap-6 p-4 bg-muted/50 rounded-lg border border-border">
           <Avatar className="h-24 w-24 border-4 border-primary/20">
-            <AvatarImage src={photoPreview} alt={personalInfo.fullName} />
+            <AvatarImage src={personalInfo.photo} alt={personalInfo.fullName} />
             <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground text-2xl">
               {personalInfo.fullName ? personalInfo.fullName.split(' ').map(n => n[0]).join('') : <Camera />}
             </AvatarFallback>
@@ -62,27 +55,17 @@ const PersonalInfoForm = () => {
                 onClick={() => document.getElementById('photo-upload')?.click()}
               >
                 <Upload className="h-4 w-4 mr-2" />
-                {photoPreview ? 'Change' : 'Upload'}
+                {personalInfo.photo ? 'Change' : 'Upload'}
               </Button>
-              {photoPreview && (
-                <>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleSavePhoto}
-                  >
-                    Save Photo
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={handleRemovePhoto}
-                  >
-                    Remove
-                  </Button>
-                </>
+              {personalInfo.photo && (
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleRemovePhoto}
+                >
+                  Remove
+                </Button>
               )}
               <input
                 id="photo-upload"
