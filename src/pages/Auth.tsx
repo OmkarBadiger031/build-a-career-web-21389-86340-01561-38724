@@ -33,7 +33,11 @@ const Auth = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      // Reset signup flag if component unmounts
+      setIsSigningUp(false);
+    };
   }, [navigate, isSigningUp]);
 
   const handleSignUp = async (e: React.FormEvent) => {
