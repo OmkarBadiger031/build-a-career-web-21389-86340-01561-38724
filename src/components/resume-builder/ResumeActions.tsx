@@ -9,8 +9,39 @@ const ResumeActions = () => {
 
   const handleDownloadPDF = () => {
     try {
+      const preview = document.getElementById('resume-preview');
+      if (!preview) {
+        toast.error('Resume preview not found');
+        return;
+      }
+      
       toast.info('Opening print dialog...');
+      
+      // Add print-specific styles
+      const printStyles = document.createElement('style');
+      printStyles.textContent = `
+        @media print {
+          body * { visibility: hidden; }
+          #resume-preview, #resume-preview * { visibility: visible; }
+          #resume-preview { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+        }
+      `;
+      document.head.appendChild(printStyles);
+      
       window.print();
+      
+      // Clean up print styles
+      setTimeout(() => {
+        document.head.removeChild(printStyles);
+      }, 1000);
+      
       toast.success('✓ Ready to save as PDF!');
     } catch (error) {
       console.error('Print error:', error);

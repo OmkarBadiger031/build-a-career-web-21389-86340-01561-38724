@@ -244,7 +244,7 @@ export const ATSScoreChecker = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'resume-ats-optimized.json';
+      a.download = `resume-ats-optimized-${Date.now()}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -253,6 +253,17 @@ export const ATSScoreChecker = () => {
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Failed to download resume. Please try again.');
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    try {
+      toast.info('Opening print dialog for PDF...');
+      window.print();
+      toast.success('✓ Save as PDF from print dialog!');
+    } catch (error) {
+      console.error('Print error:', error);
+      toast.error('Failed to open print dialog');
     }
   };
 
@@ -381,14 +392,25 @@ export const ATSScoreChecker = () => {
               )}
             </Button>
 
-            <Button
-              onClick={handleDownloadFixed}
-              variant="outline"
-              className="w-full gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download Optimized Resume
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={handleDownloadFixed}
+                variant="outline"
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                JSON Data
+              </Button>
+              
+              <Button
+                onClick={handleDownloadPDF}
+                variant="outline"
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
+            </div>
           </div>
         </div>
       )}
