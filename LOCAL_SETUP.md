@@ -102,7 +102,12 @@ No additional backend setup or API keys required!
 ## Troubleshooting
 
 ### Port Already in Use
-If port 8080 is taken, edit `vite.config.ts` to change the port.
+If port 8080 is taken, edit `vite.config.ts` to change the port:
+```typescript
+server: {
+  port: 3000, // Change to any available port
+}
+```
 
 ### Authentication Issues
 Make sure you're using the correct credentials and that auto-confirm is enabled in the backend settings.
@@ -110,8 +115,33 @@ Make sure you're using the correct credentials and that auto-confirm is enabled 
 ### Storage Quota Errors
 The app automatically handles localStorage quota by storing large files (like photos) in sessionStorage.
 
+### PDF Download Not Working
+If PDF downloads fail:
+1. Make sure pop-ups are not blocked in your browser
+2. Try using Chrome/Edge for best print-to-PDF experience
+3. When print dialog opens, select "Save as PDF" as the destination
+4. For VS Code local development, ensure you're viewing in a browser (not the VS Code preview panel)
+
+### Edge Functions Not Working Locally
+Edge functions require deployment to work. They will:
+- Automatically deploy when you push code
+- Work in the browser preview
+- Process AI requests through Lovable Cloud
+
+### Build Errors
+If you encounter build errors:
+```bash
+# Clear node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+
+# Clear cache and rebuild
+npm run build --force
+```
+
 ## Support
 
 For more information, check:
 - [Lovable Documentation](https://docs.lovable.dev/)
+- [Troubleshooting Guide](https://docs.lovable.dev/tips-tricks/troubleshooting)
 - [Project README](./README.md)

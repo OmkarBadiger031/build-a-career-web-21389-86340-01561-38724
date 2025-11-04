@@ -137,9 +137,34 @@ export const AIAssistant = () => {
         return;
       }
       
+      // Add print-specific styles
+      const printStyles = document.createElement('style');
+      printStyles.id = 'ai-assistant-print-styles';
+      printStyles.textContent = `
+        @media print {
+          body * { visibility: hidden; }
+          #resume-preview, #resume-preview * { visibility: visible; }
+          #resume-preview { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+        }
+      `;
+      document.head.appendChild(printStyles);
+      
       toast.info('Opening print dialog for PDF...');
       window.print();
-      toast.success('✓ Save as PDF from print dialog!');
+      
+      // Clean up print styles
+      setTimeout(() => {
+        const styles = document.getElementById('ai-assistant-print-styles');
+        if (styles) document.head.removeChild(styles);
+        toast.success('✓ Save as PDF from print dialog!');
+      }, 1000);
     } catch (error) {
       console.error('Print error:', error);
       toast.error('Failed to open print dialog');

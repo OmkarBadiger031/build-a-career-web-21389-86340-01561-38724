@@ -239,157 +239,141 @@ export const ATSScoreChecker = () => {
     }
 
     try {
-      // Create a temporary container for the resume
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        toast.error('Please allow pop-ups to download PDF');
-        return;
-      }
-
-      // Generate HTML content for the resume
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Resume - ${resumeData.personalInfo?.fullName || 'Resume'}</title>
-          <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              margin: 40px;
-              line-height: 1.6;
-              color: #333;
+      // Create a formatted document for printing
+      const printContent = document.createElement('div');
+      printContent.id = 'ats-print-content';
+      printContent.style.cssText = 'display: none;';
+      
+      printContent.innerHTML = `
+        <style>
+          @media print {
+            body * { visibility: hidden; }
+            #ats-print-content, #ats-print-content * { visibility: visible; }
+            #ats-print-content { 
+              position: absolute; 
+              left: 0; 
+              top: 0; 
+              width: 100%;
+              padding: 40px;
             }
-            h1 { 
-              font-size: 24px; 
-              margin-bottom: 10px;
-              color: #1a1a1a;
-            }
-            h2 { 
-              font-size: 18px; 
-              margin-top: 20px;
-              margin-bottom: 10px;
-              border-bottom: 2px solid #333;
-              padding-bottom: 5px;
-              color: #1a1a1a;
-            }
-            h3 { 
-              font-size: 16px; 
-              margin-top: 15px;
-              margin-bottom: 5px;
-              color: #1a1a1a;
-            }
-            p { margin: 5px 0; }
-            ul { 
-              margin: 5px 0; 
-              padding-left: 20px;
-            }
-            li { margin: 3px 0; }
-            .contact-info { 
-              margin-bottom: 20px;
-              font-size: 14px;
-            }
-            .section { margin-bottom: 20px; }
-            .date { 
-              color: #666; 
-              font-style: italic;
-              font-size: 14px;
-            }
-            .skills { 
-              display: flex; 
-              flex-wrap: wrap; 
-              gap: 10px;
-            }
-            .skill-tag { 
-              background: #f0f0f0; 
-              padding: 5px 10px; 
-              border-radius: 4px;
-              font-size: 14px;
-            }
-          </style>
-        </head>
-        <body>
-          <div>
-            <h1>${resumeData.personalInfo?.fullName || 'Professional Resume'}</h1>
-            <div class="contact-info">
-              ${resumeData.personalInfo?.email ? `<p>Email: ${resumeData.personalInfo.email}</p>` : ''}
-              ${resumeData.personalInfo?.phone ? `<p>Phone: ${resumeData.personalInfo.phone}</p>` : ''}
-              ${resumeData.personalInfo?.location ? `<p>Location: ${resumeData.personalInfo.location}</p>` : ''}
-              ${resumeData.personalInfo?.linkedin ? `<p>LinkedIn: ${resumeData.personalInfo.linkedin}</p>` : ''}
-            </div>
-
-            ${resumeData.summary ? `
-              <div class="section">
-                <h2>Professional Summary</h2>
-                <p>${resumeData.summary}</p>
-              </div>
-            ` : ''}
-
-            ${resumeData.workExperience && resumeData.workExperience.length > 0 ? `
-              <div class="section">
-                <h2>Work Experience</h2>
-                ${resumeData.workExperience.map((exp: any) => `
-                  <div style="margin-bottom: 15px;">
-                    <h3>${exp.position || 'Position'}</h3>
-                    <p><strong>${exp.company || 'Company'}</strong></p>
-                    <p class="date">${exp.startDate || ''} - ${exp.endDate || exp.current ? 'Present' : ''}</p>
-                    ${exp.description ? `<p>${exp.description}</p>` : ''}
-                    ${exp.responsibilities && exp.responsibilities.length > 0 ? `
-                      <ul>
-                        ${exp.responsibilities.map((resp: string) => `<li>${resp}</li>`).join('')}
-                      </ul>
-                    ` : ''}
-                  </div>
-                `).join('')}
-              </div>
-            ` : ''}
-
-            ${resumeData.education && resumeData.education.length > 0 ? `
-              <div class="section">
-                <h2>Education</h2>
-                ${resumeData.education.map((edu: any) => `
-                  <div style="margin-bottom: 10px;">
-                    <h3>${edu.degree || 'Degree'} ${edu.fieldOfStudy ? `in ${edu.fieldOfStudy}` : ''}</h3>
-                    <p><strong>${edu.institution || 'Institution'}</strong></p>
-                    <p class="date">${edu.startDate || ''} - ${edu.endDate || ''}</p>
-                  </div>
-                `).join('')}
-              </div>
-            ` : ''}
-
-            ${resumeData.skills && (resumeData.skills.technical?.length > 0 || resumeData.skills.soft?.length > 0) ? `
-              <div class="section">
-                <h2>Skills</h2>
-                ${resumeData.skills.technical?.length > 0 ? `
-                  <div style="margin-bottom: 10px;">
-                    <h3>Technical Skills</h3>
-                    <div class="skills">
-                      ${resumeData.skills.technical.map((skill: string) => `<span class="skill-tag">${skill}</span>`).join('')}
-                    </div>
-                  </div>
-                ` : ''}
-                ${resumeData.skills.soft?.length > 0 ? `
-                  <div>
-                    <h3>Soft Skills</h3>
-                    <div class="skills">
-                      ${resumeData.skills.soft.map((skill: string) => `<span class="skill-tag">${skill}</span>`).join('')}
-                    </div>
-                  </div>
-                ` : ''}
-              </div>
-            ` : ''}
+          }
+          #ats-print-content {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+          }
+          #ats-print-content h1 { 
+            font-size: 24px; 
+            margin-bottom: 10px;
+            color: #1a1a1a;
+          }
+          #ats-print-content h2 { 
+            font-size: 18px; 
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+          }
+          #ats-print-content h3 { 
+            font-size: 16px; 
+            margin-top: 15px;
+            margin-bottom: 5px;
+          }
+          #ats-print-content p { margin: 5px 0; }
+          #ats-print-content ul { 
+            margin: 5px 0; 
+            padding-left: 20px;
+          }
+          #ats-print-content li { margin: 3px 0; }
+          #ats-print-content .contact-info { 
+            margin-bottom: 20px;
+            font-size: 14px;
+          }
+          #ats-print-content .section { margin-bottom: 20px; }
+          #ats-print-content .date { 
+            color: #666; 
+            font-style: italic;
+            font-size: 14px;
+          }
+        </style>
+        <div>
+          <h1>${resumeData.personalInfo?.fullName || 'Professional Resume'}</h1>
+          <div class="contact-info">
+            ${resumeData.personalInfo?.email ? `<p>${resumeData.personalInfo.email}</p>` : ''}
+            ${resumeData.personalInfo?.phone ? `<p>${resumeData.personalInfo.phone}</p>` : ''}
+            ${resumeData.personalInfo?.location ? `<p>${resumeData.personalInfo.location}</p>` : ''}
+            ${resumeData.personalInfo?.linkedin ? `<p>${resumeData.personalInfo.linkedin}</p>` : ''}
           </div>
-        </body>
-        </html>
+
+          ${resumeData.summary ? `
+            <div class="section">
+              <h2>Professional Summary</h2>
+              <p>${resumeData.summary}</p>
+            </div>
+          ` : ''}
+
+          ${resumeData.workExperience && resumeData.workExperience.length > 0 ? `
+            <div class="section">
+              <h2>Work Experience</h2>
+              ${resumeData.workExperience.map((exp: any) => `
+                <div style="margin-bottom: 15px;">
+                  <h3>${exp.position || 'Position'}</h3>
+                  <p><strong>${exp.company || 'Company'}</strong></p>
+                  <p class="date">${exp.startDate || ''} - ${exp.endDate || exp.current ? 'Present' : ''}</p>
+                  ${exp.description ? `<p>${exp.description}</p>` : ''}
+                  ${exp.responsibilities && exp.responsibilities.length > 0 ? `
+                    <ul>
+                      ${exp.responsibilities.map((resp: string) => `<li>${resp}</li>`).join('')}
+                    </ul>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          ${resumeData.education && resumeData.education.length > 0 ? `
+            <div class="section">
+              <h2>Education</h2>
+              ${resumeData.education.map((edu: any) => `
+                <div style="margin-bottom: 10px;">
+                  <h3>${edu.degree || 'Degree'} ${edu.fieldOfStudy ? `in ${edu.fieldOfStudy}` : ''}</h3>
+                  <p><strong>${edu.institution || 'Institution'}</strong></p>
+                  <p class="date">${edu.startDate || ''} - ${edu.endDate || ''}</p>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          ${resumeData.skills && (resumeData.skills.technical?.length > 0 || resumeData.skills.soft?.length > 0) ? `
+            <div class="section">
+              <h2>Skills</h2>
+              ${resumeData.skills.technical?.length > 0 ? `
+                <div style="margin-bottom: 10px;">
+                  <h3>Technical Skills</h3>
+                  <p>${resumeData.skills.technical.join(', ')}</p>
+                </div>
+              ` : ''}
+              ${resumeData.skills.soft?.length > 0 ? `
+                <div>
+                  <h3>Soft Skills</h3>
+                  <p>${resumeData.skills.soft.join(', ')}</p>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+        </div>
       `;
 
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-
-      // Wait for content to load then print
-      printWindow.onload = () => {
-        printWindow.print();
+      document.body.appendChild(printContent);
+      
+      toast.info('Opening print dialog for PDF...');
+      window.print();
+      
+      // Clean up after printing
+      setTimeout(() => {
+        document.body.removeChild(printContent);
         toast.success('✓ Save as PDF from print dialog!');
-      };
+      }, 1000);
     } catch (error) {
       console.error('PDF generation error:', error);
       toast.error('Failed to generate PDF. Please try again.');
