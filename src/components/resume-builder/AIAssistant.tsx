@@ -129,25 +129,6 @@ export const AIAssistant = () => {
     }
   };
 
-  const handleDownloadFixed = () => {
-    try {
-      const data = JSON.stringify(resumeData, null, 2);
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `resume-fixed-${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success('✓ Fixed resume downloaded!');
-    } catch (error) {
-      console.error('Download error:', error);
-      toast.error('Failed to download resume');
-    }
-  };
-
   const handleDownloadPDF = () => {
     try {
       const preview = document.getElementById('resume-preview');
@@ -264,25 +245,14 @@ export const AIAssistant = () => {
               )}
             </Button>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                onClick={handleDownloadFixed}
-                variant="outline"
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                JSON Data
-              </Button>
-              
-              <Button
-                onClick={handleDownloadPDF}
-                variant="outline"
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                PDF
-              </Button>
-            </div>
+            <Button
+              onClick={handleDownloadPDF}
+              variant="outline"
+              className="w-full gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download Fixed Resume as PDF
+            </Button>
           </div>
         </div>
       )}

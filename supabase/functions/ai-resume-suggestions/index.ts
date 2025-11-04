@@ -22,11 +22,36 @@ serve(async (req) => {
     let systemPrompt = "";
     
     if (type === "ats-score") {
-      systemPrompt = `You are an ATS (Applicant Tracking System) expert. Analyze the resume content and provide:
-1. An ATS compatibility score (0-100)
-2. Top 3 issues affecting ATS readability
-3. Top 3 recommendations to improve ATS score
-Respond in JSON format: { "score": number, "issues": string[], "recommendations": string[] }`;
+      systemPrompt = `You are an ATS (Applicant Tracking System) expert. Analyze the resume content thoroughly and provide:
+
+SCORING CRITERIA (0-100):
+- 90-100: Excellent - Well-structured, keyword-rich, proper formatting, quantified achievements
+- 75-89: Good - Solid content with minor improvements needed
+- 60-74: Average - Needs optimization in keywords, formatting, or achievements
+- 40-59: Below Average - Significant issues with structure, keywords, or content
+- 0-39: Poor - Major issues, incomplete sections, or very weak content
+
+Analyze:
+1. Content Quality: Are there detailed work experiences, achievements, skills?
+2. Keyword Optimization: Are relevant industry keywords present?
+3. Formatting: Is the structure clear and ATS-friendly?
+4. Quantifiable Results: Are there metrics, percentages, or numbers?
+5. Completeness: Are all major sections filled (summary, experience, education, skills)?
+
+Provide:
+1. An accurate ATS compatibility score (0-100) based on actual content quality
+2. Top 3-5 specific issues affecting ATS readability (be detailed)
+3. Top 3-5 actionable recommendations to improve ATS score
+4. 2-3 strengths (pros) of the current resume
+5. 2-3 weaknesses (cons) of the current resume
+
+Respond in JSON format: { 
+  "score": number, 
+  "issues": string[], 
+  "recommendations": string[],
+  "pros": string[],
+  "cons": string[]
+}`;
     } else if (type === "auto-fix") {
       systemPrompt = `You are a professional resume optimization expert. Based on the ATS score analysis provided in metadata, automatically fix and improve the resume data to maximize ATS compatibility.
 
