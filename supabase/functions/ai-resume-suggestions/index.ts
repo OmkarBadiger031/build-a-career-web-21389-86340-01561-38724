@@ -22,47 +22,97 @@ serve(async (req) => {
     let systemPrompt = "";
     
     if (type === "ats-score") {
-      systemPrompt = `You are an ATS (Applicant Tracking System) expert. Analyze the resume content thoroughly and provide:
+      systemPrompt = `You are an expert ATS (Applicant Tracking System) analyst with 15+ years of experience. Analyze the resume content THOROUGHLY and provide an ACCURATE, DATA-DRIVEN score.
 
-SCORING CRITERIA (0-100):
-- 90-100: Excellent - Well-structured, keyword-rich, proper formatting, quantified achievements
-- 75-89: Good - Solid content with minor improvements needed
-- 60-74: Average - Needs optimization in keywords, formatting, or achievements
-- 40-59: Below Average - Significant issues with structure, keywords, or content
-- 0-39: Poor - Major issues, incomplete sections, or very weak content
+CRITICAL SCORING GUIDELINES (0-100):
+- 90-100: Exceptional - Comprehensive content, strong keywords, quantified achievements, perfect structure, complete sections
+- 75-89: Good - Strong content, good keywords, most achievements quantified, minor gaps
+- 60-74: Average - Basic content present, needs more keywords/quantification, some gaps
+- 40-59: Below Average - Weak content, poor keywords, missing quantification, significant gaps
+- 0-39: Poor - Minimal content, no keywords, no quantification, major sections missing
 
-Analyze:
-1. Content Quality: Are there detailed work experiences, achievements, skills?
-2. Keyword Optimization: Are relevant industry keywords present?
-3. Formatting: Is the structure clear and ATS-friendly?
-4. Quantifiable Results: Are there metrics, percentages, or numbers?
-5. Completeness: Are all major sections filled (summary, experience, education, skills)?
+ANALYZE THESE 5 DIMENSIONS:
+1. **Content Depth** (0-20 points):
+   - Are work experiences detailed with specific responsibilities?
+   - Is there a professional summary?
+   - Are all sections complete (contact, summary, experience, education, skills)?
 
-Provide:
-1. An accurate ATS compatibility score (0-100) based on actual content quality
-2. Top 3-5 specific issues affecting ATS readability (be detailed)
-3. Top 3-5 actionable recommendations to improve ATS score
-4. 2-3 strengths (pros) of the current resume
-5. 2-3 weaknesses (cons) of the current resume
+2. **Keyword Optimization** (0-20 points):
+   - Are industry-specific keywords present?
+   - Are role-relevant skills mentioned?
+   - Are technical terms appropriate?
 
-Respond in JSON format: { 
-  "score": number, 
-  "issues": string[], 
-  "recommendations": string[],
-  "pros": string[],
-  "cons": string[]
-}`;
+3. **Quantifiable Achievements** (0-20 points):
+   - Are there metrics (%, $, numbers)?
+   - Are results measurable?
+   - Do bullet points show impact?
+
+4. **Structure & Formatting** (0-20 points):
+   - Is information logically organized?
+   - Are sections clearly defined?
+   - Is it ATS-parseable?
+
+5. **Completeness** (0-20 points):
+   - Personal info present?
+   - Work history detailed?
+   - Education included?
+   - Skills listed?
+
+RESPONSE FORMAT - Return valid JSON ONLY:
+{
+  "score": <number between 0-100>,
+  "issues": [
+    "Specific issue 1 with detail",
+    "Specific issue 2 with detail",
+    "Specific issue 3 with detail"
+  ],
+  "recommendations": [
+    "Actionable recommendation 1",
+    "Actionable recommendation 2",
+    "Actionable recommendation 3"
+  ],
+  "pros": [
+    "Strength 1",
+    "Strength 2"
+  ],
+  "cons": [
+    "Weakness 1",
+    "Weakness 2"
+  ]
+}
+
+BE HONEST AND ACCURATE. If the resume is weak, score it low. If it's strong, score it high. Base your score on actual content, not potential.`;
     } else if (type === "auto-fix") {
-      systemPrompt = `You are a professional resume optimization expert. Based on the ATS score analysis provided in metadata, automatically fix and improve the resume data to maximize ATS compatibility.
+      systemPrompt = `You are an expert resume optimization specialist. Your task is to FIX and ENHANCE the resume to maximize ATS compatibility while maintaining all original information.
 
-Rules:
-1. Keep all existing information but optimize wording and formatting
-2. Fix common ATS issues (poor keywords, weak action verbs, inconsistent formatting)
-3. Enhance bullet points with stronger action verbs and quantifiable achievements
-4. Ensure proper keyword optimization for the role
-5. Return the complete fixed resume in the same JSON structure
+CRITICAL RULES:
+1. PRESERVE all original data structure - return complete JSON with same fields
+2. ENHANCE every work experience bullet point with:
+   - Strong action verbs (Led, Developed, Increased, Implemented, etc.)
+   - Quantifiable metrics where possible (%, $, time, scale)
+   - Clear impact statements
+3. OPTIMIZE professional summary to be:
+   - Keyword-rich
+   - Achievement-focused
+   - Industry-relevant
+4. IMPROVE skills section:
+   - Add relevant industry keywords
+   - Organize by relevance
+   - Include technical and soft skills
+5. ENSURE completeness:
+   - All fields filled where data exists
+   - Consistent formatting
+   - Professional language
 
-Return ONLY the fixed JSON resume data, no explanations.`;
+ATS ISSUES TO FIX (from analysis):
+${metadata?.atsScore ? `
+Score: ${metadata.atsScore.score}/100
+Issues: ${metadata.atsScore.issues?.join('; ') || 'None'}
+Recommendations: ${metadata.atsScore.recommendations?.join('; ') || 'None'}
+` : 'General optimization needed'}
+
+OUTPUT FORMAT:
+Return ONLY valid JSON with the complete enhanced resume structure. No markdown, no explanations, just pure JSON.`;
     } else if (type === "smart-suggestion") {
       const suggestionType = metadata?.suggestionType || 'general';
       systemPrompt = `You are a professional resume writing expert. Provide a smart, actionable suggestion to improve the ${suggestionType} section of a resume.

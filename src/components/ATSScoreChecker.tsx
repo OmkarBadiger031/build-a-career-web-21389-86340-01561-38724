@@ -119,12 +119,59 @@ export const ATSScoreChecker = () => {
 
     setLoading(true);
     try {
-      const content = JSON.stringify({
+      // Prepare comprehensive resume data for accurate ATS analysis
+      const resumeForAnalysis = {
+        personalInfo: dataToCheck.personalInfo || {},
         summary: dataToCheck.summary || '',
-        experience: dataToCheck.workExperience || dataToCheck.experience || [],
+        workExperience: dataToCheck.workExperience || dataToCheck.experience || [],
         education: dataToCheck.education || [],
-        skills: dataToCheck.skills || [],
-      });
+        skills: dataToCheck.skills || {},
+        projects: dataToCheck.projects || [],
+        certifications: dataToCheck.certifications || []
+      };
+
+      // Create a detailed text representation for better AI analysis
+      const content = `
+PERSONAL INFORMATION:
+Name: ${resumeForAnalysis.personalInfo.fullName || 'Not provided'}
+Email: ${resumeForAnalysis.personalInfo.email || 'Not provided'}
+Phone: ${resumeForAnalysis.personalInfo.phone || 'Not provided'}
+Location: ${resumeForAnalysis.personalInfo.location || 'Not provided'}
+
+PROFESSIONAL SUMMARY:
+${resumeForAnalysis.summary || 'No summary provided'}
+
+WORK EXPERIENCE:
+${resumeForAnalysis.workExperience.map((exp: any, idx: number) => `
+${idx + 1}. ${exp.position || 'Position'} at ${exp.company || 'Company'}
+   Duration: ${exp.startDate || ''} - ${exp.endDate || (exp.current ? 'Present' : '')}
+   ${exp.description ? `Description: ${exp.description}` : ''}
+   ${exp.responsibilities && exp.responsibilities.length > 0 ? `Responsibilities:\n   - ${exp.responsibilities.join('\n   - ')}` : ''}
+`).join('\n')}
+
+EDUCATION:
+${resumeForAnalysis.education.map((edu: any, idx: number) => `
+${idx + 1}. ${edu.degree || 'Degree'} in ${edu.fieldOfStudy || 'Field'}
+   Institution: ${edu.institution || 'Institution'}
+   Duration: ${edu.startDate || ''} - ${edu.endDate || ''}
+`).join('\n')}
+
+SKILLS:
+Technical Skills: ${resumeForAnalysis.skills.technical?.join(', ') || 'None listed'}
+Soft Skills: ${resumeForAnalysis.skills.soft?.join(', ') || 'None listed'}
+Languages: ${resumeForAnalysis.skills.languages?.join(', ') || 'None listed'}
+
+PROJECTS:
+${resumeForAnalysis.projects.map((proj: any, idx: number) => `
+${idx + 1}. ${proj.name || 'Project'}
+   ${proj.description || ''}
+`).join('\n')}
+
+CERTIFICATIONS:
+${resumeForAnalysis.certifications.map((cert: any, idx: number) => `
+${idx + 1}. ${cert.name || 'Certification'} - ${cert.issuer || ''}
+`).join('\n')}
+`.trim();
 
       const { data: result, error } = await supabase.functions.invoke('ai-resume-suggestions', {
         body: {
@@ -239,141 +286,238 @@ export const ATSScoreChecker = () => {
     }
 
     try {
-      // Create a formatted document for printing
-      const printContent = document.createElement('div');
-      printContent.id = 'ats-print-content';
-      printContent.style.cssText = 'display: none;';
+      // Build comprehensive HTML content with proper formatting
+      const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${resumeData.personalInfo?.fullName || 'Resume'} - Fixed Resume</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Arial', 'Helvetica', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 850px;
+      margin: 0 auto;
+      padding: 40px 60px;
+      background: white;
+    }
+    
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      color: #1a1a1a;
+      font-weight: 700;
+    }
+    
+    .contact-info {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #333;
+      font-size: 14px;
+      color: #555;
+    }
+    
+    .contact-info p {
+      margin: 4px 0;
+    }
+    
+    h2 {
+      font-size: 20px;
+      margin-top: 24px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+      font-weight: 700;
+      border-bottom: 2px solid #333;
+      padding-bottom: 6px;
+    }
+    
+    h3 {
+      font-size: 16px;
+      margin-top: 16px;
+      margin-bottom: 6px;
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+    
+    p {
+      margin: 6px 0;
+      font-size: 14px;
+    }
+    
+    ul {
+      margin: 8px 0;
+      padding-left: 24px;
+    }
+    
+    li {
+      margin: 4px 0;
+      font-size: 14px;
+    }
+    
+    .section {
+      margin-bottom: 24px;
+      page-break-inside: avoid;
+    }
+    
+    .experience-item, .education-item, .project-item, .cert-item {
+      margin-bottom: 18px;
+      page-break-inside: avoid;
+    }
+    
+    .date {
+      color: #666;
+      font-style: italic;
+      font-size: 13px;
+    }
+    
+    .skills-list {
+      margin: 8px 0;
+    }
+    
+    @media print {
+      body {
+        padding: 20px 40px;
+      }
       
-      printContent.innerHTML = `
-        <style>
-          @media print {
-            body * { visibility: hidden; }
-            #ats-print-content, #ats-print-content * { visibility: visible; }
-            #ats-print-content { 
-              position: absolute; 
-              left: 0; 
-              top: 0; 
-              width: 100%;
-              padding: 40px;
-            }
-          }
-          #ats-print-content {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-          }
-          #ats-print-content h1 { 
-            font-size: 24px; 
-            margin-bottom: 10px;
-            color: #1a1a1a;
-          }
-          #ats-print-content h2 { 
-            font-size: 18px; 
-            margin-top: 20px;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 5px;
-          }
-          #ats-print-content h3 { 
-            font-size: 16px; 
-            margin-top: 15px;
-            margin-bottom: 5px;
-          }
-          #ats-print-content p { margin: 5px 0; }
-          #ats-print-content ul { 
-            margin: 5px 0; 
-            padding-left: 20px;
-          }
-          #ats-print-content li { margin: 3px 0; }
-          #ats-print-content .contact-info { 
-            margin-bottom: 20px;
-            font-size: 14px;
-          }
-          #ats-print-content .section { margin-bottom: 20px; }
-          #ats-print-content .date { 
-            color: #666; 
-            font-style: italic;
-            font-size: 14px;
-          }
-        </style>
-        <div>
-          <h1>${resumeData.personalInfo?.fullName || 'Professional Resume'}</h1>
-          <div class="contact-info">
-            ${resumeData.personalInfo?.email ? `<p>${resumeData.personalInfo.email}</p>` : ''}
-            ${resumeData.personalInfo?.phone ? `<p>${resumeData.personalInfo.phone}</p>` : ''}
-            ${resumeData.personalInfo?.location ? `<p>${resumeData.personalInfo.location}</p>` : ''}
-            ${resumeData.personalInfo?.linkedin ? `<p>${resumeData.personalInfo.linkedin}</p>` : ''}
-          </div>
+      .section {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>${resumeData.personalInfo?.fullName || 'Professional Resume'}</h1>
+  
+  <div class="contact-info">
+    ${resumeData.personalInfo?.email ? `<p>Email: ${resumeData.personalInfo.email}</p>` : ''}
+    ${resumeData.personalInfo?.phone ? `<p>Phone: ${resumeData.personalInfo.phone}</p>` : ''}
+    ${resumeData.personalInfo?.location ? `<p>Location: ${resumeData.personalInfo.location}</p>` : ''}
+    ${resumeData.personalInfo?.linkedin ? `<p>LinkedIn: ${resumeData.personalInfo.linkedin}</p>` : ''}
+    ${resumeData.personalInfo?.website ? `<p>Website: ${resumeData.personalInfo.website}</p>` : ''}
+  </div>
 
-          ${resumeData.summary ? `
-            <div class="section">
-              <h2>Professional Summary</h2>
-              <p>${resumeData.summary}</p>
-            </div>
-          ` : ''}
+  ${resumeData.summary ? `
+    <div class="section">
+      <h2>Professional Summary</h2>
+      <p>${resumeData.summary}</p>
+    </div>
+  ` : ''}
 
-          ${resumeData.workExperience && resumeData.workExperience.length > 0 ? `
-            <div class="section">
-              <h2>Work Experience</h2>
-              ${resumeData.workExperience.map((exp: any) => `
-                <div style="margin-bottom: 15px;">
-                  <h3>${exp.position || 'Position'}</h3>
-                  <p><strong>${exp.company || 'Company'}</strong></p>
-                  <p class="date">${exp.startDate || ''} - ${exp.endDate || exp.current ? 'Present' : ''}</p>
-                  ${exp.description ? `<p>${exp.description}</p>` : ''}
-                  ${exp.responsibilities && exp.responsibilities.length > 0 ? `
-                    <ul>
-                      ${exp.responsibilities.map((resp: string) => `<li>${resp}</li>`).join('')}
-                    </ul>
-                  ` : ''}
-                </div>
-              `).join('')}
-            </div>
-          ` : ''}
-
-          ${resumeData.education && resumeData.education.length > 0 ? `
-            <div class="section">
-              <h2>Education</h2>
-              ${resumeData.education.map((edu: any) => `
-                <div style="margin-bottom: 10px;">
-                  <h3>${edu.degree || 'Degree'} ${edu.fieldOfStudy ? `in ${edu.fieldOfStudy}` : ''}</h3>
-                  <p><strong>${edu.institution || 'Institution'}</strong></p>
-                  <p class="date">${edu.startDate || ''} - ${edu.endDate || ''}</p>
-                </div>
-              `).join('')}
-            </div>
-          ` : ''}
-
-          ${resumeData.skills && (resumeData.skills.technical?.length > 0 || resumeData.skills.soft?.length > 0) ? `
-            <div class="section">
-              <h2>Skills</h2>
-              ${resumeData.skills.technical?.length > 0 ? `
-                <div style="margin-bottom: 10px;">
-                  <h3>Technical Skills</h3>
-                  <p>${resumeData.skills.technical.join(', ')}</p>
-                </div>
-              ` : ''}
-              ${resumeData.skills.soft?.length > 0 ? `
-                <div>
-                  <h3>Soft Skills</h3>
-                  <p>${resumeData.skills.soft.join(', ')}</p>
-                </div>
-              ` : ''}
-            </div>
+  ${resumeData.workExperience && resumeData.workExperience.length > 0 ? `
+    <div class="section">
+      <h2>Work Experience</h2>
+      ${resumeData.workExperience.map((exp: any) => `
+        <div class="experience-item">
+          <h3>${exp.position || 'Position'}</h3>
+          <p><strong>${exp.company || 'Company'}</strong></p>
+          <p class="date">${exp.startDate || ''} - ${exp.endDate || (exp.current ? 'Present' : '')}</p>
+          ${exp.description ? `<p>${exp.description}</p>` : ''}
+          ${exp.responsibilities && exp.responsibilities.length > 0 ? `
+            <ul>
+              ${exp.responsibilities.map((resp: string) => `<li>${resp}</li>`).join('')}
+            </ul>
           ` : ''}
         </div>
+      `).join('')}
+    </div>
+  ` : ''}
+
+  ${resumeData.education && resumeData.education.length > 0 ? `
+    <div class="section">
+      <h2>Education</h2>
+      ${resumeData.education.map((edu: any) => `
+        <div class="education-item">
+          <h3>${edu.degree || 'Degree'}${edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ''}</h3>
+          <p><strong>${edu.institution || 'Institution'}</strong></p>
+          <p class="date">${edu.startDate || ''} - ${edu.endDate || ''}</p>
+          ${edu.gpa ? `<p>GPA: ${edu.gpa}</p>` : ''}
+        </div>
+      `).join('')}
+    </div>
+  ` : ''}
+
+  ${resumeData.skills && (resumeData.skills.technical?.length > 0 || resumeData.skills.soft?.length > 0 || resumeData.skills.languages?.length > 0) ? `
+    <div class="section">
+      <h2>Skills</h2>
+      ${resumeData.skills.technical?.length > 0 ? `
+        <div class="skills-list">
+          <h3>Technical Skills</h3>
+          <p>${resumeData.skills.technical.join(', ')}</p>
+        </div>
+      ` : ''}
+      ${resumeData.skills.soft?.length > 0 ? `
+        <div class="skills-list">
+          <h3>Soft Skills</h3>
+          <p>${resumeData.skills.soft.join(', ')}</p>
+        </div>
+      ` : ''}
+      ${resumeData.skills.languages?.length > 0 ? `
+        <div class="skills-list">
+          <h3>Languages</h3>
+          <p>${resumeData.skills.languages.join(', ')}</p>
+        </div>
+      ` : ''}
+    </div>
+  ` : ''}
+
+  ${resumeData.projects && resumeData.projects.length > 0 ? `
+    <div class="section">
+      <h2>Projects</h2>
+      ${resumeData.projects.map((proj: any) => `
+        <div class="project-item">
+          <h3>${proj.name || 'Project'}</h3>
+          ${proj.description ? `<p>${proj.description}</p>` : ''}
+          ${proj.technologies ? `<p><strong>Technologies:</strong> ${proj.technologies.join ? proj.technologies.join(', ') : proj.technologies}</p>` : ''}
+          ${proj.url ? `<p><strong>URL:</strong> ${proj.url}</p>` : ''}
+        </div>
+      `).join('')}
+    </div>
+  ` : ''}
+
+  ${resumeData.certifications && resumeData.certifications.length > 0 ? `
+    <div class="section">
+      <h2>Certifications</h2>
+      ${resumeData.certifications.map((cert: any) => `
+        <div class="cert-item">
+          <h3>${cert.name || 'Certification'}</h3>
+          <p><strong>${cert.issuer || 'Issuing Organization'}</strong></p>
+          ${cert.date ? `<p class="date">Issued: ${cert.date}</p>` : ''}
+          ${cert.credentialId ? `<p>Credential ID: ${cert.credentialId}</p>` : ''}
+        </div>
+      `).join('')}
+    </div>
+  ` : ''}
+
+  <script>
+    // Auto-trigger print dialog when page loads
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 250);
+    };
+  </script>
+</body>
+</html>
       `;
 
-      document.body.appendChild(printContent);
-      
-      toast.info('Opening print dialog for PDF...');
-      window.print();
-      
-      // Clean up after printing
-      setTimeout(() => {
-        document.body.removeChild(printContent);
-        toast.success('✓ Save as PDF from print dialog!');
-      }, 1000);
+      // Open in new window and trigger print
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        toast.success('Opening print dialog. Choose "Save as PDF" as your printer.');
+      } else {
+        toast.error('Please allow pop-ups to download the PDF');
+      }
     } catch (error) {
       console.error('PDF generation error:', error);
       toast.error('Failed to generate PDF. Please try again.');
