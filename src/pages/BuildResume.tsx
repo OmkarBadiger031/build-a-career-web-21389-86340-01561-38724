@@ -57,6 +57,21 @@ const BuildResume = () => {
         // Extract base template type from template ID
         const baseTemplate = templateId.split('-')[0] as 'modern' | 'professional' | 'creative' | 'ats' | 'tech' | 'healthcare' | 'finance' | 'marketing';
         setTemplate(baseTemplate);
+        
+        // Store template ID in context for persistence
+        localStorage.setItem('selectedTemplateId', templateId);
+        toast.success(`Template "${templateId}" selected and saved`);
+      }
+    } else {
+      // Try to restore from localStorage if no URL param
+      const savedTemplateId = localStorage.getItem('selectedTemplateId');
+      if (savedTemplateId) {
+        const design = getTemplateDesign(savedTemplateId);
+        if (design) {
+          updateDesign(design);
+          const baseTemplate = savedTemplateId.split('-')[0] as 'modern' | 'professional' | 'creative' | 'ats' | 'tech' | 'healthcare' | 'finance' | 'marketing';
+          setTemplate(baseTemplate);
+        }
       }
     }
   }, [searchParams, updateDesign, setTemplate]);

@@ -17,7 +17,7 @@ import { FinanceTemplate } from './templates/FinanceTemplate';
 const ResumePreview = () => {
   const { resumeData } = useResume();
   const [searchParams] = useSearchParams();
-  const templateId = searchParams.get('template');
+  const templateId = searchParams.get('template') || localStorage.getItem('selectedTemplateId');
 
   const defaultDesign: TemplateDesign = {
     fontFamily: 'inter',
