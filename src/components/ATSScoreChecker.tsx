@@ -22,45 +22,75 @@ export const ATSScoreChecker = () => {
   const [atsScore, setAtsScore] = useState<ATSScore | null>(null);
   const [resumeData, setResumeData] = useState<any>(null);
 
+  const getFileType = (file: File) => {
+    const ext = file.name.toLowerCase().split('.').pop() || '';
+    const mimeType = file.type.toLowerCase();
+    
+    if (['txt', 'json'].includes(ext) || mimeType.includes('text') || mimeType.includes('json')) {
+      return 'text';
+    }
+    if (['pdf'].includes(ext) || mimeType.includes('pdf')) {
+      return 'document';
+    }
+    if (['doc', 'docx'].includes(ext) || mimeType.includes('word') || mimeType.includes('document')) {
+      return 'document';
+    }
+    if (['ppt', 'pptx'].includes(ext) || mimeType.includes('presentation') || mimeType.includes('powerpoint')) {
+      return 'document';
+    }
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(ext) || mimeType.includes('image')) {
+      return 'image';
+    }
+    return 'unknown';
+  };
+
   const handleUploadResume = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,.txt,text/plain,application/json';
+    input.accept = '.json,.txt,.pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,text/plain,application/json,application/pdf';
     input.onchange = async (e: any) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      const fileName = file.name.toLowerCase();
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('File too large. Maximum size is 10MB.');
+        return;
+      }
+
+      const fileType = getFileType(file);
       
-      // Only accept JSON and TXT files
-      if (!fileName.endsWith('.json') && !fileName.endsWith('.txt') && 
-          file.type !== 'application/json' && file.type !== 'text/plain') {
-        toast.error('Please upload a TXT or JSON file only. Copy your resume into a text file for best results.');
+      if (fileType === 'unknown') {
+        toast.error('Unsupported file format. Please use PDF, DOCX, PPT, TXT, or JSON.');
         return;
       }
 
       setLoading(true);
-      toast.info('Processing your resume...');
       
       try {
-        if (fileName.endsWith('.json') || file.type === 'application/json') {
-          // Handle JSON files
-          const reader = new FileReader();
-          reader.onload = async (event: any) => {
-            try {
-              const data = JSON.parse(event.target.result as string);
-              setResumeData(data);
-              await checkATSScore(data);
-            } catch (error) {
-              console.error('Error parsing JSON:', error);
-              toast.error('Invalid JSON file format');
-              setLoading(false);
-            }
-          };
-          reader.readAsText(file);
-        } else if (fileName.endsWith('.txt') || file.type === 'text/plain') {
-          // Handle PDF, DOCX, DOC, and TXT files - extract text and parse with AI
-          const reader = new FileReader();
+        if (fileType === 'text') {
+          // Handle text-based files (TXT, JSON)
+          const fileName = file.name.toLowerCase();
+          toast.info('Processing your resume...');
+          
+          if (fileName.endsWith('.json') || file.type === 'application/json') {
+            // Handle JSON files
+            const reader = new FileReader();
+            reader.onload = async (event: any) => {
+              try {
+                const data = JSON.parse(event.target.result as string);
+                setResumeData(data);
+                await checkATSScore(data);
+              } catch (error) {
+                console.error('Error parsing JSON:', error);
+                toast.error('Invalid JSON file format');
+                setLoading(false);
+              }
+            };
+            reader.readAsText(file);
+          } else {
+            // Handle TXT files
+            const reader = new FileReader();
           reader.onload = async (event: any) => {
             try {
               const content = event.target.result as string;
@@ -129,9 +159,98 @@ export const ATSScoreChecker = () => {
           };
 
           reader.readAsText(file);
-        } else {
-          toast.error('Unsupported file format. Please upload TXT or JSON only.');
-          setLoading(false);
+          }
+        } else if (fileType === 'document' || fileType === 'image') {
+          // Handle binary files (PDF, DOCX, PPT, images)
+          toast.info(fileType === 'image' ? 'Processing image...' : 'Extracting text from document...');
+          
+          const reader = new FileReader();
+          reader.onload = async (event: any) => {
+            try {
+              const base64Data = (event.target.result as string).split(',')[1];
+              
+              console.log('Sending file to parse-document function...');
+              
+              // Call parse-document edge function
+              const { data: parseResult, error: parseError } = await supabase.functions.invoke('parse-document', {
+                body: {
+                  fileData: base64Data,
+                  fileName: file.name,
+                  mimeType: file.type
+                }
+              });
+              
+              if (parseError) {
+                console.error('Document parsing error:', parseError);
+                toast.error(parseError.message || 'Failed to extract text from document');
+                setLoading(false);
+                return;
+              }
+              
+              if (parseResult?.error) {
+                toast.error(parseResult.error);
+                setLoading(false);
+                return;
+              }
+              
+              if (!parseResult?.text || parseResult.text.length < 20) {
+                toast.error('Could not extract readable text from this file. Please try a text file or different format.');
+                setLoading(false);
+                return;
+              }
+              
+              console.log('Extracted text length:', parseResult.text.length);
+              toast.info('Text extracted! Now parsing with AI...');
+              
+              // Now parse the extracted text with AI
+              const { data: aiResult, error: aiError } = await supabase.functions.invoke('ai-resume-suggestions', {
+                body: {
+                  content: parseResult.text,
+                  type: 'parse-resume',
+                },
+              });
+              
+              if (aiError) {
+                console.error('AI parsing error:', aiError);
+                if (aiError.message?.includes('429') || aiError.message?.includes('Rate limit')) {
+                  toast.error('Rate limits exceeded. Please try again later.');
+                } else if (aiError.message?.includes('402') || aiError.message?.includes('Payment')) {
+                  toast.error('Payment required. Please add funds to your workspace.');
+                } else {
+                  toast.error(`Parsing failed: ${aiError.message || 'Unknown error'}`);
+                }
+                setLoading(false);
+                return;
+              }
+              
+              if (aiResult?.text) {
+                let jsonString = aiResult.text.trim();
+                
+                // Remove markdown code blocks
+                if (jsonString.startsWith('```json')) {
+                  jsonString = jsonString.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+                } else if (jsonString.startsWith('```')) {
+                  jsonString = jsonString.replace(/```\n?/g, '');
+                }
+                
+                const parsedData = JSON.parse(jsonString);
+                setResumeData(parsedData);
+                toast.success('Resume parsed successfully!');
+                await checkATSScore(parsedData);
+              }
+            } catch (error) {
+              console.error('Error processing document:', error);
+              toast.error('Failed to process file. Please try a different format.');
+              setLoading(false);
+            }
+          };
+          
+          reader.onerror = () => {
+            toast.error('Failed to read file. Please try again.');
+            setLoading(false);
+          };
+          
+          reader.readAsDataURL(file);
         }
       } catch (error) {
         console.error('Error reading file:', error);
@@ -362,8 +481,17 @@ ${idx + 1}. ${cert.name || 'Certification'} - ${cert.issuer || ''}
           size="lg"
         >
           <Upload className="h-4 w-4" />
-          Upload Your Resume
+          Upload Resume (PDF, DOCX, TXT, JSON)
         </Button>
+        
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Badge variant="outline" className="text-xs">PDF</Badge>
+          <Badge variant="outline" className="text-xs">DOCX</Badge>
+          <Badge variant="outline" className="text-xs">DOC</Badge>
+          <Badge variant="outline" className="text-xs">PPT</Badge>
+          <Badge variant="outline" className="text-xs">TXT</Badge>
+          <Badge variant="outline" className="text-xs">JSON</Badge>
+        </div>
         
         {resumeData && (
           <Button 
