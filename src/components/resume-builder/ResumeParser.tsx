@@ -39,88 +39,122 @@ export const ResumeParser = () => {
     try {
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const content = e.target?.result as string;
-        
-        const { data, error } = await supabase.functions.invoke('ai-resume-suggestions', {
-          body: {
-            content: content,
-            type: 'parse-resume',
-          },
-        });
+        try {
+          const content = e.target?.result as string;
+          
+          // Validate content
+          if (!content || content.trim().length === 0) {
+            toast.error('File is empty or cannot be read');
+            setLoading(false);
+            return;
+          }
 
-        if (error) {
-          if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
-            toast.error('Rate limits exceeded. Please try again later.');
-          } else if (error.message?.includes('402') || error.message?.includes('Payment')) {
-            toast.error('Payment required. Please add funds to your workspace.');
+          console.log('Sending content to AI for parsing, length:', content.length);
+          
+          const { data, error } = await supabase.functions.invoke('ai-resume-suggestions', {
+            body: {
+              content: content,
+              type: 'parse-resume',
+            },
+          });
+
+          if (error) {
+            console.error('Edge function error:', error);
+            if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
+              toast.error('Rate limits exceeded. Please try again later.');
+            } else if (error.message?.includes('402') || error.message?.includes('Payment')) {
+              toast.error('Payment required. Please add funds to your workspace.');
+            } else if (error.message?.includes('FunctionsHttpError')) {
+              toast.error('Failed to parse resume. Please try uploading a plain text file (.txt) with your resume content.');
+            } else {
+              toast.error(`Parsing failed: ${error.message || 'Unknown error'}`);
+            }
+            setLoading(false);
+            return;
+          }
+
+          if (data?.text) {
+            let jsonString = data.text.trim();
+            
+            // Remove markdown code blocks
+            if (jsonString.startsWith('```json')) {
+              jsonString = jsonString.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+            } else if (jsonString.startsWith('```')) {
+              jsonString = jsonString.replace(/```\n?/g, '');
+            }
+            
+            console.log('Parsing JSON response...');
+            const parsedData = JSON.parse(jsonString);
+            
+            // Update resume data
+            if (parsedData.personalInfo) {
+              updatePersonalInfo(parsedData.personalInfo);
+            }
+            
+            if (parsedData.workExperience && Array.isArray(parsedData.workExperience)) {
+              parsedData.workExperience.forEach((exp: any) => {
+                addWorkExperience({
+                  ...exp,
+                  id: crypto.randomUUID(),
+                  current: exp.endDate?.toLowerCase().includes('present') || false
+                });
+              });
+            }
+            
+            if (parsedData.education && Array.isArray(parsedData.education)) {
+              parsedData.education.forEach((edu: any) => {
+                addEducation({
+                  ...edu,
+                  id: crypto.randomUUID(),
+                  current: edu.endDate?.toLowerCase().includes('present') || false
+                });
+              });
+            }
+            
+            if (parsedData.skills) {
+              // Add technical skills
+              if (parsedData.skills.technical && Array.isArray(parsedData.skills.technical)) {
+                parsedData.skills.technical.forEach((skill: string) => {
+                  addSkill({ id: crypto.randomUUID(), name: skill, category: 'technical' });
+                });
+              }
+              // Add soft skills
+              if (parsedData.skills.soft && Array.isArray(parsedData.skills.soft)) {
+                parsedData.skills.soft.forEach((skill: string) => {
+                  addSkill({ id: crypto.randomUUID(), name: skill, category: 'soft' });
+                });
+              }
+              // Add languages
+              if (parsedData.skills.languages && Array.isArray(parsedData.skills.languages)) {
+                parsedData.skills.languages.forEach((skill: string) => {
+                  addSkill({ id: crypto.randomUUID(), name: skill, category: 'language' });
+                });
+              }
+            }
+            
+            toast.success('Resume parsed successfully! Check the form sections.');
+            setFile(null);
           } else {
-            throw error;
+            toast.error('No data received from AI. Please try again.');
           }
-          return;
-        }
-
-        if (data?.text) {
-          let jsonString = data.text.trim();
-          if (jsonString.startsWith('```json')) {
-            jsonString = jsonString.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-          } else if (jsonString.startsWith('```')) {
-            jsonString = jsonString.replace(/```\n?/g, '');
-          }
-          
-          const parsedData = JSON.parse(jsonString);
-          
-          // Update resume data
-          if (parsedData.personalInfo) {
-            updatePersonalInfo(parsedData.personalInfo);
-          }
-          
-          if (parsedData.workExperience && Array.isArray(parsedData.workExperience)) {
-            parsedData.workExperience.forEach((exp: any) => {
-              addWorkExperience(exp);
-            });
-          }
-          
-          if (parsedData.education && Array.isArray(parsedData.education)) {
-            parsedData.education.forEach((edu: any) => {
-              addEducation(edu);
-            });
-          }
-          
-          if (parsedData.skills) {
-            // Add technical skills
-            if (parsedData.skills.technical && Array.isArray(parsedData.skills.technical)) {
-              parsedData.skills.technical.forEach((skill: string) => {
-                addSkill({ id: crypto.randomUUID(), name: skill, category: 'technical' });
-              });
-            }
-            // Add soft skills
-            if (parsedData.skills.soft && Array.isArray(parsedData.skills.soft)) {
-              parsedData.skills.soft.forEach((skill: string) => {
-                addSkill({ id: crypto.randomUUID(), name: skill, category: 'soft' });
-              });
-            }
-            // Add languages
-            if (parsedData.skills.languages && Array.isArray(parsedData.skills.languages)) {
-              parsedData.skills.languages.forEach((skill: string) => {
-                addSkill({ id: crypto.randomUUID(), name: skill, category: 'language' });
-              });
-            }
-          }
-          
-          toast.success('Resume parsed successfully! Check the form sections.');
-          setFile(null);
+        } catch (parseError) {
+          console.error('Parse error:', parseError);
+          toast.error('Failed to parse AI response. Please try a different file format.');
+        } finally {
+          setLoading(false);
         }
       };
+
+      reader.onerror = () => {
+        toast.error('Failed to read file. Please try again.');
+        setLoading(false);
+      };
       
-      if (file.type === 'application/pdf' || file.type.includes('word')) {
-        reader.readAsDataURL(file);
-      } else {
-        reader.readAsText(file);
-      }
+      // Read file as text (works best with .txt files)
+      reader.readAsText(file);
     } catch (error) {
       console.error('Resume parsing error:', error);
-      toast.error('Failed to parse resume. Please try again.');
-    } finally {
+      toast.error('Failed to parse resume. Please try again with a plain text file.');
       setLoading(false);
     }
   };
@@ -133,15 +167,15 @@ export const ResumeParser = () => {
       </div>
       
       <p className="text-sm text-muted-foreground">
-        Upload your existing resume and let AI extract all the information automatically
+        Upload your existing resume as a plain text file (.txt) for best results. Copy your resume content into a text file and upload it.
       </p>
 
       <div className="space-y-2">
-        <Label htmlFor="resume-file">Upload Resume (PDF, DOC, DOCX, TXT)</Label>
+        <Label htmlFor="resume-file">Upload Resume (TXT format recommended)</Label>
         <Input
           id="resume-file"
           type="file"
-          accept=".pdf,.doc,.docx,.txt"
+          accept=".txt,.pdf,.doc,.docx"
           onChange={handleFileChange}
           disabled={loading}
         />

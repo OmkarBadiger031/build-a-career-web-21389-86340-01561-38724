@@ -56,6 +56,15 @@ export const ATSScoreChecker = () => {
             try {
               const content = event.target.result as string;
               
+              // Validate content
+              if (!content || content.trim().length === 0) {
+                toast.error('File is empty or cannot be read. Please try a plain text file (.txt).');
+                setLoading(false);
+                return;
+              }
+
+              console.log('Parsing resume, content length:', content.length);
+              
               // Use AI to parse the resume text into structured format
               const { data: parseResult, error: parseError } = await supabase.functions.invoke('ai-resume-suggestions', {
                 body: {
@@ -65,12 +74,15 @@ export const ATSScoreChecker = () => {
               });
 
               if (parseError) {
+                console.error('Parse error:', parseError);
                 if (parseError.message?.includes('429') || parseError.message?.includes('Rate limit')) {
                   toast.error('Rate limits exceeded. Please try again later.');
                 } else if (parseError.message?.includes('402') || parseError.message?.includes('Payment')) {
                   toast.error('Payment required. Please add funds to your workspace.');
+                } else if (parseError.message?.includes('FunctionsHttpError')) {
+                  toast.error('Failed to parse resume. Please try uploading a plain text file (.txt) or JSON export from the Resume Builder.');
                 } else {
-                  throw parseError;
+                  toast.error(`Parsing failed: ${parseError.message || 'Unknown error'}`);
                 }
                 setLoading(false);
                 return;
@@ -86,17 +98,27 @@ export const ATSScoreChecker = () => {
                   jsonString = jsonString.replace(/```\n?/g, '');
                 }
 
+                console.log('Parsing JSON response...');
                 const parsedData = JSON.parse(jsonString);
                 setResumeData(parsedData);
                 toast.success('Resume parsed successfully!');
                 await checkATSScore(parsedData);
+              } else {
+                toast.error('No data received. Please try a different file format.');
+                setLoading(false);
               }
             } catch (error) {
               console.error('Error processing document:', error);
-              toast.error('Failed to parse resume. Please try a different file format.');
+              toast.error('Failed to parse resume. For best results, use a plain text file (.txt) or JSON export.');
               setLoading(false);
             }
           };
+
+          reader.onerror = () => {
+            toast.error('Failed to read file. Please try again.');
+            setLoading(false);
+          };
+
           reader.readAsText(file);
         } else {
           toast.error('Unsupported file format. Please upload JSON, PDF, DOCX, DOC, or TXT.');
