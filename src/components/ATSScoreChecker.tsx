@@ -25,16 +25,25 @@ export const ATSScoreChecker = () => {
   const handleUploadResume = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,.pdf,.docx,.doc,.txt';
+    input.accept = '.json,.txt,text/plain,application/json';
     input.onchange = async (e: any) => {
       const file = e.target.files[0];
       if (!file) return;
+
+      const fileName = file.name.toLowerCase();
+      
+      // Only accept JSON and TXT files
+      if (!fileName.endsWith('.json') && !fileName.endsWith('.txt') && 
+          file.type !== 'application/json' && file.type !== 'text/plain') {
+        toast.error('Please upload a TXT or JSON file only. Copy your resume into a text file for best results.');
+        return;
+      }
 
       setLoading(true);
       toast.info('Processing your resume...');
       
       try {
-        if (file.name.endsWith('.json')) {
+        if (fileName.endsWith('.json') || file.type === 'application/json') {
           // Handle JSON files
           const reader = new FileReader();
           reader.onload = async (event: any) => {
@@ -49,7 +58,7 @@ export const ATSScoreChecker = () => {
             }
           };
           reader.readAsText(file);
-        } else if (file.name.endsWith('.pdf') || file.name.endsWith('.docx') || file.name.endsWith('.doc') || file.name.endsWith('.txt')) {
+        } else if (fileName.endsWith('.txt') || file.type === 'text/plain') {
           // Handle PDF, DOCX, DOC, and TXT files - extract text and parse with AI
           const reader = new FileReader();
           reader.onload = async (event: any) => {
@@ -121,7 +130,7 @@ export const ATSScoreChecker = () => {
 
           reader.readAsText(file);
         } else {
-          toast.error('Unsupported file format. Please upload JSON, PDF, DOCX, DOC, or TXT.');
+          toast.error('Unsupported file format. Please upload TXT or JSON only.');
           setLoading(false);
         }
       } catch (error) {
@@ -326,7 +335,7 @@ ${idx + 1}. ${cert.name || 'Certification'} - ${cert.issuer || ''}
 
   return (
     <Card className="p-6 space-y-6 h-full">
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
           <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -335,6 +344,13 @@ ${idx + 1}. ${cert.name || 'Certification'} - ${cert.issuer || ''}
             <h3 className="text-xl font-semibold">ATS Score Checker</h3>
             <p className="text-sm text-muted-foreground">Upload & optimize your resume</p>
           </div>
+        </div>
+        
+        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm space-y-2">
+          <p className="font-medium text-amber-700 dark:text-amber-400">⚠️ AI Credits Required</p>
+          <p className="text-amber-600 dark:text-amber-300">
+            This feature requires Lovable AI credits. If you see "Payment required" errors, add credits at <strong>Settings → Workspace → Usage</strong>.
+          </p>
         </div>
       </div>
 

@@ -16,15 +16,16 @@ export const ResumeParser = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      const fileType = selectedFile.type;
+      const fileName = selectedFile.name.toLowerCase();
       
-      if (fileType === 'application/pdf' || 
-          fileType === 'application/msword' || 
-          fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-          fileType === 'text/plain') {
+      // Accept text-based files and JSON
+      if (fileName.endsWith('.txt') || 
+          fileName.endsWith('.json') ||
+          selectedFile.type === 'text/plain' ||
+          selectedFile.type === 'application/json') {
         setFile(selectedFile);
       } else {
-        toast.error('Please upload a PDF, DOC, DOCX, or TXT file');
+        toast.error('Please upload a TXT or JSON file. For best results, copy your resume content into a text file.');
       }
     }
   };
@@ -166,16 +167,23 @@ export const ResumeParser = () => {
         <h3 className="font-semibold">AI Resume Parser</h3>
       </div>
       
+      <div className="p-3 bg-muted/50 rounded-lg text-sm space-y-2">
+        <p className="font-medium">⚠️ Credits Required</p>
+        <p className="text-muted-foreground">
+          AI parsing requires Lovable AI credits. If you see a "Payment required" error, add credits at Settings → Workspace → Usage.
+        </p>
+      </div>
+
       <p className="text-sm text-muted-foreground">
-        Upload your existing resume as a plain text file (.txt) for best results. Copy your resume content into a text file and upload it.
+        Upload your resume as a <strong>plain text file (.txt)</strong> or <strong>JSON export</strong>. Copy your resume content into a text file for best results.
       </p>
 
       <div className="space-y-2">
-        <Label htmlFor="resume-file">Upload Resume (TXT format recommended)</Label>
+        <Label htmlFor="resume-file">Upload Resume (TXT or JSON only)</Label>
         <Input
           id="resume-file"
           type="file"
-          accept=".txt,.pdf,.doc,.docx"
+          accept=".txt,.json,text/plain,application/json"
           onChange={handleFileChange}
           disabled={loading}
         />
